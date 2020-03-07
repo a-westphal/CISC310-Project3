@@ -1,5 +1,5 @@
 #include <iostream>
-#include <string>
+#include <string.h>
 #include <list>
 #include <vector>
 #include <chrono>
@@ -82,12 +82,36 @@ int main(int argc, char **argv)
         clearOutput(num_lines);
 
         // start new processes at their appropriate start time
+        //If a process has a start time of 0, start immediately, otherwise wait
+
 
         // determine when an I/O burst finishes and put the process back in the ready queue
 
         // sort the ready queue (if needed - based on scheduling algorithm)
+        //sort the queue for Shortest Job First:
+        if(strcmp(shared_data->algorithm,  "SJF"))
+        {
 
+        }
+        //sort the queue for Preemptive Priority:
+        if(strcmp(shared_data->algorithm,"PP"))
+        {
+
+        }
         // determine if all processes are in the terminated state
+        int count = 0; 
+        for(int i = 0; i < processes.size(); i ++)
+        {
+        	if(processes[i]->getState() == "State::Terminated")
+        	{
+        		count = count + 1;
+        	}
+        }
+
+        if(count == processes.size())
+        {
+        	//we done
+        }
 
         // output process status table
         num_lines = printProcessOutput(processes, shared_data->mutex);
