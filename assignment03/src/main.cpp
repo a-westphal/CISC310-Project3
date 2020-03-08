@@ -89,12 +89,12 @@ int main(int argc, char **argv)
 
         // sort the ready queue (if needed - based on scheduling algorithm)
         //sort the queue for Shortest Job First:
-        if(strcmp(shared_data->algorithm,  "SJF"))
+        if(shared_data->algorithm == ScheduleAlgorithm::SJF)
         {
 
         }
         //sort the queue for Preemptive Priority:
-        if(strcmp(shared_data->algorithm,"PP"))
+        if(shared_data->algorithm == ScheduleAlgorithm::PP)
         {
 
         }
@@ -102,15 +102,16 @@ int main(int argc, char **argv)
         int count = 0; 
         for(int i = 0; i < processes.size(); i ++)
         {
-        	if(processes[i]->getState() == "State::Terminated")
+        	//need the Process:: on the front to determine which class we are referring to:
+        	if(processes[i]->getState() == Process::State::Terminated)
         	{
         		count = count + 1;
         	}
         }
-
+        //if all process states = terminated, we're done!
         if(count == processes.size())
         {
-        	//we done
+        	shared_data->all_terminated = true;
         }
 
         // output process status table
