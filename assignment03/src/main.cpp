@@ -1,5 +1,5 @@
 #include <iostream>
-#include <string.h>
+#include <string>
 #include <list>
 #include <vector>
 #include <chrono>
@@ -82,36 +82,34 @@ int main(int argc, char **argv)
         clearOutput(num_lines);
 
         // start new processes at their appropriate start time
-        //If a process has a start time of 0, start immediately, otherwise wait
-
 
         // determine when an I/O burst finishes and put the process back in the ready queue
 
         // sort the ready queue (if needed - based on scheduling algorithm)
-        //sort the queue for Shortest Job First:
+        // shortest job first: 
         if(shared_data->algorithm == ScheduleAlgorithm::SJF)
         {
 
         }
-        //sort the queue for Preemptive Priority:
+
+        //preemptive process:
         if(shared_data->algorithm == ScheduleAlgorithm::PP)
         {
 
         }
         // determine if all processes are in the terminated state
-        int count = 0; 
+        int count = 0;
         for(int i = 0; i < processes.size(); i ++)
         {
-        	//need the Process:: on the front to determine which class we are referring to:
         	if(processes[i]->getState() == Process::State::Terminated)
         	{
         		count = count + 1;
         	}
         }
-        //if all process states = terminated, we're done!
+        //possibly need to lock the mutex when changing the boolean:
         if(count == processes.size())
         {
-        	shared_data->all_terminated = true;
+        	shared_data->all_terminated = true;	
         }
 
         // output process status table
@@ -158,6 +156,14 @@ void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)
     //     - Ready queue if time slice elapsed or process was preempted
     //  - Wait context switching time
     //  * Repeat until all processes in terminated state
+
+    /* Need to lock onto the queue so there isn't a race condition for the 
+    	next item in the queue
+    	Run the allotted time, whether it be the burst time or the RR time
+    	slice
+    	Place the process back onto the queue with the correct state
+    	 -- if the process is waiting on IO, the state is i/o
+    	Wait the context switching time		*/
 }
 
 int printProcessOutput(std::vector<Process*>& processes, std::mutex& mutex)

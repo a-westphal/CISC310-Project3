@@ -35,49 +35,53 @@ Process::~Process()
     delete[] burst_times;
 }
 
-uint16_t Process::getPid()
+uint16_t Process::getPid() const
 {
     return pid;
 }
 
-uint32_t Process::getStartTime()
+uint32_t Process::getStartTime() const
 {
     return start_time;
 }
 
-uint8_t Process::getPriority()
+uint8_t Process::getPriority() const
 {
     return priority;
 }
 
-Process::State Process::getState()
+Process::State Process::getState() const
 {
     return state;
 }
 
-int8_t Process::getCpuCore()
+int8_t Process::getCpuCore() const
 {
     return core;
 }
 
-double Process::getTurnaroundTime()
+double Process::getTurnaroundTime() const
 {
     return (double)turn_time / 1000.0;
 }
 
-double Process::getWaitTime()
+double Process::getWaitTime() const
 {
     return (double)wait_time / 1000.0;
 }
 
-double Process::getCpuTime()
+double Process::getCpuTime() const
 {
     return (double)cpu_time / 1000.0;
 }
 
-double Process::getRemainingTime()
+double Process::getRemainingTime() const
 {
     return (double)remain_time / 1000.0;
+}
+int Process::getCurrentBurstTime() const
+{
+    return current_burst;
 }
 
 void Process::setState(State new_state, uint32_t current_time)
@@ -96,8 +100,23 @@ void Process::setCpuCore(int8_t core_num)
 
 void Process::updateProcess(uint32_t current_time)
 {
-    // use `current_time` to update turnaround time, wait time, burst times, 
-    // cpu time, and remaining time
+    // use `current_time` to update, wait time, burst times, 
+    // cpu time
+
+    //If the state is terminated, turnaround time = current time - launchtime
+    if(getState() == State::Terminated)
+    {
+        turn_time = (current_time - launch_time);
+    }
+
+
+    //calculate the remaining time:
+    int sum = 0; 
+    for(int i = current_burst; i < num_bursts; i ++)
+    {
+        sum = sum + burst_times[i];
+    }
+    remain_time = sum;
 }
 
 void Process::updateBurstTime(int burst_idx, uint32_t new_time)
@@ -112,25 +131,22 @@ void Process::updateBurstTime(int burst_idx, uint32_t new_time)
 // SJF - comparator for sorting read queue based on shortest remaining CPU time
 bool SjfComparator::operator ()(const Process *p1, const Process *p2)
 {
-	// if p1's pid > p2's pid, return true; else return false
     bool p1_greater = false;
-
-    /*if(p1->getPid() > p2->getPid())
+    if(p1->getPid() > p2->getPid())
     {
     	p1_greater = true;
-    }*/
+    }
 
-    return p1_greater;
+    return p1_greater; // change this!
 }
 
 // PP - comparator for sorting read queue based on priority
 bool PpComparator::operator ()(const Process *p1, const Process *p2)
 {
-	//if p1's priority > p2's priority, return true; else return false
     bool p1_greater = false;
-   /* if(p1->getPriority() > p2->getPriority())
+    if(p1->getPriority() > p2->getPriority())
     {
-    	p1_greater = true;
-    }*/
+        p1_greater = true;
+    }
     return p1_greater;
 }
