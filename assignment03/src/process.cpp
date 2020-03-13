@@ -79,9 +79,13 @@ double Process::getRemainingTime() const
 {
     return (double)remain_time / 1000.0;
 }
-int Process::getCurrentBurstTime() const
+int Process::getCurrentBurstIndex() const
 {
     return current_burst;
+}
+double Process::getBurstTime(int burst_idx) const
+{
+	return burst_times[burst_idx];
 }
 
 void Process::setState(State new_state, uint32_t current_time)
@@ -124,7 +128,6 @@ void Process::updateBurstTime(int burst_idx, uint32_t new_time)
     burst_times[burst_idx] = new_time;
 }
 
-
 // Comparator methods: used in std::list sort() method
 // No comparator needed for FCFS or RR (ready queue never sorted)
 
@@ -137,7 +140,7 @@ bool SjfComparator::operator ()(const Process *p1, const Process *p2)
     	p1_greater = true;
     }
 
-    return p1_greater; // change this!
+    return p1_greater; 
 }
 
 // PP - comparator for sorting read queue based on priority

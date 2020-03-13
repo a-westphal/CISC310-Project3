@@ -89,13 +89,13 @@ int main(int argc, char **argv)
         // shortest job first: 
         if(shared_data->algorithm == ScheduleAlgorithm::SJF)
         {
-
+        	//sort via algo
         }
 
         //preemptive process:
         if(shared_data->algorithm == ScheduleAlgorithm::PP)
         {
-
+        	//sort via algo 
         }
         // determine if all processes are in the terminated state
         int count = 0;
@@ -109,7 +109,8 @@ int main(int argc, char **argv)
         //possibly need to lock the mutex when changing the boolean:
         if(count == processes.size())
         {
-        	shared_data->all_terminated = true;	
+
+        		shared_data->all_terminated = true;	
         }
 
         // output process status table
@@ -164,6 +165,53 @@ void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)
     	Place the process back onto the queue with the correct state
     	 -- if the process is waiting on IO, the state is i/o
     	Wait the context switching time		*/
+	while(!(shared_data->all_terminated))
+	{
+		uint32_t start_time;
+		Process *p;
+	
+		uint32_t slice = 0;
+		int index = p->getCurrentBurstIndex();
+		if(shared_data->algorithm = ScheduleAlgorithm::RR)
+		{
+			slice = shared_data->time_slice;
+		}
+		//otherwise, the time is the burst time of the process popped off the list:
+		else
+		{		
+			slice = uint32_t(p->getBurstTime(index));
+		}
+	
+		//simulate running the process for a set amount of time: 
+	
+		start_time = currentTime(); 
+		while(start_time - currentTime() > slice )
+		{
+			//lock the mutex, check for a higher priority: 
+			shared_data->mutex.lock();
+			/*	sort the readyqueue for higher priority, compare the priorities of the 
+				process we are currently looping on versus the process at the front of the
+				ready queue */
+
+			shared_data->mutex.unlock();
+		}
+	
+		/*	lock the mutex, check if there is a higher priority in the list:	*/
+	
+		/*	Update the BurstTime if greater than the slice:	*/
+		if(p->getBurstTime(index) > slice)
+		{
+			p->updateBurstTime(index,p->getBurstTime(index) - slice);
+		}
+	
+		if(p->getCurrentBurstIndex()%2 == 0)
+		{
+			//the next burst is IO
+			
+		}
+		/*	Wait the context switching time allotment	*/
+		usleep(shared_data->context_switch);
+	}
 }
 
 int printProcessOutput(std::vector<Process*>& processes, std::mutex& mutex)
