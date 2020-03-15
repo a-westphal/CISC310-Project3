@@ -19,6 +19,7 @@ typedef struct SchedulerData {
     uint32_t time_slice;
     std::list<Process*> ready_queue;
     bool all_terminated;
+    std::list<Process*> io_queue;
 } SchedulerData;
 
 void coreRunProcesses(uint8_t core_id, SchedulerData *data);
@@ -84,6 +85,17 @@ int main(int argc, char **argv)
         // start new processes at their appropriate start time
 
         // determine when an I/O burst finishes and put the process back in the ready queue
+        shared_data->mutex.lock();
+        for(std::list<Process*>::iterator it= shared_data->io_queue.begin(); it != shared_data->io_queue.end(); ++it)
+        {
+        	std::cout << *it << std::endl;
+        	int index = (*it)->getCurrentBurstIndex();
+        	//if the io burst has finished, put the process back onto the ready queue
+        	if(currentTime() - (*it)->getIOQueueStart() >= (*it)->getBurstTime(index))
+        	{
+				shared_data->ready_queue.push_back(*it);
+        	}
+        }
 
         // sort the ready queue (if needed - based on scheduling algorithm)
         // shortest job first: 
@@ -182,21 +194,27 @@ void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)
 			slice = uint32_t(p->getBurstTime(index));
 		}
 	
-		//simulate running the process for a set amount of time: 
-	
+		//simulate running the process for a set amount of time 
+		/*	lock the mutex, check if there is a higher priority in the list:	*/
 		start_time = currentTime(); 
-		while(start_time - currentTime() > slice )
+		uint8_t p_priority = p->getPriority();
+		while(currentTime() - start_time > slice && shared_data->algorithm == ScheduleAlgorithm::PP)
 		{
 			//lock the mutex, check for a higher priority: 
 			shared_data->mutex.lock();
-			/*	sort the readyqueue for higher priority, compare the priorities of the 
-				process we are currently looping on versus the process at the front of the
-				ready queue */
+			/*	find a higher priority if Preemptive Priority is running */
+			for(std::list<Process*>::iterator it= shared_data->io_queue.begin(); it != shared_data->io_queue.end(); ++it)
+	        {
+	        	//if the process on the list has a higher priority that the one on the CPU
+	        	if((*it)->getPriority() < p_priority )
+	        	{
+					p->updateBurstTime(index, p->getBurstTime(index) - (currentTime() - start_time));
+					shared_data->ready_queue.push_back(p);
+	        	}
+	        }
 
 			shared_data->mutex.unlock();
 		}
-	
-		/*	lock the mutex, check if there is a higher priority in the list:	*/
 	
 		/*	Update the BurstTime if greater than the slice:	*/
 		if(p->getBurstTime(index) > slice)
@@ -207,7 +225,18 @@ void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)
 		if(p->getCurrentBurstIndex()%2 == 0)
 		{
 			//the next burst is IO
-			
+			shared_data->mutex.lock();
+			shared_data->io_queue.push_back(p);
+			shared_data->mutex.unlock();
+		}
+
+		if(p->getCurrentBurstIndex() == p->getTotalBursts())
+		{
+			//process is terminated
+			shared_data->mutex.lock();
+			p->setState(Process::State::Terminated,currentTime());
+			shared_data->mutex.unlock();
+
 		}
 		/*	Wait the context switching time allotment	*/
 		usleep(shared_data->context_switch);

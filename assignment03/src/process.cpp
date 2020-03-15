@@ -9,6 +9,10 @@ Process::Process(ProcessDetails details, uint32_t current_time)
     num_bursts = details.num_bursts;
     current_burst = 0;
     burst_times = new uint32_t[num_bursts];
+    start_wait = 0;
+    start_cpu = 0;
+    io_queue_start = 0;
+
     for (i = 0; i < num_bursts; i++)
     {
         burst_times[i] = details.burst_times[i];
@@ -88,6 +92,16 @@ double Process::getBurstTime(int burst_idx) const
 	return burst_times[burst_idx];
 }
 
+uint32_t Process::getIOQueueStart() const
+{
+	return io_queue_start;
+}
+
+uint32_t Process::getTotalBursts() const
+{
+	return num_bursts;
+}
+
 void Process::setState(State new_state, uint32_t current_time)
 {
     if (state == State::NotStarted && new_state == State::Ready)
@@ -102,6 +116,11 @@ void Process::setCpuCore(int8_t core_num)
     core = core_num;
 }
 
+void Process::setIOQueue_Time(uint32_t time)
+{
+	io_queue_start = time;
+}
+
 void Process::updateProcess(uint32_t current_time)
 {
     // use `current_time` to update, wait time, burst times, 
@@ -112,7 +131,6 @@ void Process::updateProcess(uint32_t current_time)
     {
         turn_time = (current_time - launch_time);
     }
-
 
     //calculate the remaining time:
     int sum = 0; 
