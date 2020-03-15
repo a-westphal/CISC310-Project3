@@ -132,6 +132,22 @@ void Process::updateProcess(uint32_t current_time)
         turn_time = (current_time - launch_time);
     }
 
+    //if we haven't started running anything: 
+    if(getState() == State::Ready && getCurrentBurstIndex() == 0)
+    {
+    	start_wait = current_time;
+    }
+
+    /*	if the process is running, update the wait time, set the start_cpu 
+     	time to the current time */
+    if(getState() == State::Running)
+    {
+    	wait_time = wait_time + (current_time - start_wait);
+    	start_cpu = current_time;
+    }
+
+
+
     //calculate the remaining time:
     int sum = 0; 
     for(int i = current_burst; i < num_bursts; i ++)

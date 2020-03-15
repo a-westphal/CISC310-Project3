@@ -94,6 +94,7 @@ int main(int argc, char **argv)
         	if(currentTime() - (*it)->getIOQueueStart() >= (*it)->getBurstTime(index))
         	{
 				shared_data->ready_queue.push_back(*it);
+				(*it) -> setState(Process::State::Ready,currentTime());
         	}
         }
 
@@ -169,19 +170,21 @@ void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)
     //     - Ready queue if time slice elapsed or process was preempted
     //  - Wait context switching time
     //  * Repeat until all processes in terminated state
-
-    /* Need to lock onto the queue so there isn't a race condition for the 
-    	next item in the queue
-    	Run the allotted time, whether it be the burst time or the RR time
-    	slice
-    	Place the process back onto the queue with the correct state
-    	 -- if the process is waiting on IO, the state is i/o
-    	Wait the context switching time		*/
 	while(!(shared_data->all_terminated))
 	{
 		uint32_t start_time;
 		Process *p;
+
+		//take the first thing off the list:
+		shared_data->mutex.lock();
+		p = shared_data->ready_queue.front();
+		shared_data->ready_queue.pop_front();
+		shared_data->mutex.unlock();
+
+		p->setState(Process::State::Running,currentTime());
+		p->updateProcess(currentTime());
 	
+		//determing the time to compute:
 		uint32_t slice = 0;
 		int index = p->getCurrentBurstIndex();
 		if(shared_data->algorithm = ScheduleAlgorithm::RR)
@@ -227,6 +230,7 @@ void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)
 			//the next burst is IO
 			shared_data->mutex.lock();
 			shared_data->io_queue.push_back(p);
+			p->setState(Process::State::IO,currentTime());
 			shared_data->mutex.unlock();
 		}
 
