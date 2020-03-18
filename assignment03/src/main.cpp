@@ -99,16 +99,18 @@ int main(int argc, char **argv)
         }
 
         // sort the ready queue (if needed - based on scheduling algorithm)
-        // shortest job first: 
+        // shortest job first: sort ready queue by burst time
         if(shared_data->algorithm == ScheduleAlgorithm::SJF)
         {
         	//sort via algo
+		//sortSJFMethod();
         }
 
-        //preemptive process:
+        //preemptive process:sort ready queue by time remaining
         if(shared_data->algorithm == ScheduleAlgorithm::PP)
         {
         	//sort via algo 
+		//sortPreMethod()
         }
         // determine if all processes are in the terminated state
         int count = 0;
@@ -147,7 +149,9 @@ int main(int argc, char **argv)
     //     - Average for second 50% of processes finished
     //     - Overall average
     //  - Average turnaround time
+            //total of each process turn_time / #processes
     //  - Average waiting time
+            //total of each process turn_time / #processes
 
 
     // Clean up before quitting program
@@ -155,6 +159,48 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
+/*
+void sortSJFMethod() //if burst time is greater, move to the bottom of the ready queue
+{
+    //std::list<std::string>::iterator it = shared_data->ready_queue.begin();
+    for(int i = 0; i < processes.size()-1; i++)
+    {
+        for(int j = 0; j < processes[i].num_bursts-1; j++)
+        {
+            if (config->processes[i].burst_times[j] < config->processes[i].burst_times[j+1])
+            {
+                //swap(config->processes[i].burst_times[j], config->processes[i].burst_times[j+1]);
+                int temp = config->processes[i].burst_times[j];
+                config->processes[i].burst_times[j] = config->processes[i].burst_times[j+1];
+                config->processes[i].burst_times[j+1] = temp;
+            }
+        }
+    }
+    //std::cout<<config->processes[0].burst_times;
+    //std::cout<<config->processes[0].burst_times[1];
+    //std::cout<<shared_data->ready_queue.push_back();
+    //std::advance(it, 1);
+}
+
+void sortPreMethod() //if time remaining is smaller, move to front of ready queue
+{
+    //std::list<std::string>::iterator it = shared_data->ready_queue.begin();
+    for(int i = 0; i < config->num_processes; i++)
+    {
+        for(int j = 0; j < processes[i].num_bursts-1; j++)
+        {
+            if (config->processes[i].burst_times[j] < config->processes[i].burst_times[j+1])
+            {
+                //swap(config->processes[i].burst_times[j], config->processes[i].burst_times[j+1]);
+                int temp = config->processes[i].burst_times[j];
+                config->processes[i].burst_times[j] = config->processes[i].burst_times[j+1];
+                config->processes[i].burst_times[j+1] = temp;
+            }
+        }
+    }
+}
+*/
 
 void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)
 {
