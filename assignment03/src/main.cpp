@@ -144,9 +144,11 @@ int main(int argc, char **argv)
         schedule_threads[i].join();
     }
 
-    // print final statistics
+  // print final statistics
     //  - CPU utilization
+            //percent of the time the CPU is being used
     //  - Throughput
+            //number of processes completed per unit of time
     //     - Average for first 50% of processes finished
     //     - Average for second 50% of processes finished
     //     - Overall average
@@ -154,6 +156,17 @@ int main(int argc, char **argv)
             //total of each process turn_time / #processes
     //  - Average waiting time
             //total of each process turn_time / #processes
+    double avg_turnTime = 0.0;
+    double avg_waitTime = 0.0;
+    
+    for (i = 0; i < processes.size(); i++)
+    {
+        avg_turnTime = avg_turnTime + (double)processes[i]->getTurnaroundTime();
+        avg_waitTime = avg_waitTime + (double)processes[i]->getWaitTime();
+    }
+    
+    avg_turnTime = avg_turnTime/config->num_processes;
+    avg_waitTime = avg_waitTime/config->num_processes;
 
 
     // Clean up before quitting program
