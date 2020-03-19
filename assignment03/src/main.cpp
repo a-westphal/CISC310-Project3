@@ -99,17 +99,19 @@ int main(int argc, char **argv)
         }
 
         // sort the ready queue (if needed - based on scheduling algorithm)
-        // shortest job first: sort ready queue by burst time
+        // shortest job first: sort ready queue by using comparator
         if(shared_data->algorithm == ScheduleAlgorithm::SJF)
         {
         	//sort via algo
+		shared_data->ready_queue.sort(SjfComparator());
 		//sortSJFMethod();
         }
 
-        //preemptive process:sort ready queue by time remaining
+        //preemptive process:sort ready queue by using comparator
         if(shared_data->algorithm == ScheduleAlgorithm::PP)
         {
         	//sort via algo 
+		shared_data->ready_queue.sort(PpComparator());
 		//sortPreMethod()
         }
         // determine if all processes are in the terminated state
