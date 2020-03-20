@@ -60,9 +60,11 @@ int main(int argc, char **argv)
     {
         Process *p = new Process(config->processes[i], start);
         processes.push_back(p);
-        if (p->getState() == Process::State::NotStarted)
+        shared_data->ready_queue.push_back(p);
+        if(p->getStartTime() == 0)
         {
-            shared_data->ready_queue.push_back(p);
+        	p->setState(Process::State::Ready, currentTime());
+        	p->updateProcess(currentTime());
         }
     }
 
@@ -84,28 +86,28 @@ int main(int argc, char **argv)
         clearOutput(num_lines);
 
         // start new processes at their appropriate start time
-        std::unique_lock<std::mutex> lock3(shared_data->mutex);
-        shared_data->start_time = currentTime();
+        std::unique_lock<std::mutex> lock2(shared_data->mutex);
         for(std::list<Process*>::iterator it = shared_data->ready_queue.begin(); it!= shared_data->ready_queue.end(); ++it)
         {
-        	if(currentTime() - (shared_data->start_time) <= (*it)->getStartTime())
+        	if(currentTime() - (*it)->getStartTime()>= currentTime() - start && (*it)->getState() == Process::State::NotStarted)
         	{
-        		std::cout << "Start time has elapsed " <<std::endl;
         		(*it)->setState(Process::State::Ready,currentTime());
+        		(*it) ->updateProcess(currentTime());
         	}
         }
-        lock3.unlock();
+        lock2.unlock();
+  
         // determine when an I/O burst finishes and put the process back in the ready queue
       	std::unique_lock<std::mutex> lock1(shared_data->mutex);
         for(std::list<Process*>::iterator it= shared_data->io_queue.begin(); it != shared_data->io_queue.end(); ++it)
         {
-        	std::cout << *it << std::endl;
         	int index = (*it)->getCurrentBurstIndex();
         	//if the io burst has finished, put the process back onto the ready queue
         	if(currentTime() - (*it)->getIOQueueStart() >= (*it)->getBurstTime(index))
         	{
 				shared_data->ready_queue.push_back(*it);
 				(*it) -> setState(Process::State::Ready,currentTime());
+				(*it) ->updateProcess(currentTime());
         	}
         }
         lock1.unlock();
@@ -113,9 +115,14 @@ int main(int argc, char **argv)
         // shortest job first: sort ready queue by using comparator
         if(shared_data->algorithm == ScheduleAlgorithm::SJF)
         {
+        	std::cout << "In SJF if" <<std::endl;
         	//sort via algo
         	std::unique_lock<std::mutex> lock(shared_data->mutex);
 				shared_data->ready_queue.sort(SjfComparator());
+				for(std::list<Process*>::iterator it = shared_data->ready_queue.begin(); it!= shared_data->ready_queue.end(); ++it)
+        		{
+		        	std::cout<< (*it) -> getPid() <<std::endl;
+		        }
 			lock.unlock();
 		//sortSJFMethod();
         }
@@ -127,18 +134,20 @@ int main(int argc, char **argv)
         	std::unique_lock<std::mutex> lock(shared_data->mutex);
 				shared_data->ready_queue.sort(PpComparator());
 			lock.unlock();
+
+
 		//sortPreMethod()
         }
         // determine if all processes are in the terminated state
         int count = 0;
         std::unique_lock<std::mutex> lock(shared_data->mutex);
-        for(int i = 0; i < processes.size(); i ++)
+        for(std::list<Process*>::iterator it = shared_data->ready_queue.begin(); it!= shared_data->ready_queue.end(); ++it)
         {
-        	if(processes[i]->getState() == Process::State::Terminated)
+        	if((*it)->getState() == Process::State::Terminated)
         	{
-        		count = count + 1;
+        		count += 1;
         	}
-        }
+		}
         lock.unlock();
         //possibly need to lock the mutex when changing the boolean:
         if(count == processes.size())
@@ -149,8 +158,7 @@ int main(int argc, char **argv)
         }
 
         // output process status table
-        num_lines = printProcessOutput(processes, shared_data->mutex);
-
+       	num_lines = printProcessOutput(processes, shared_data->mutex);
         // sleep 1/60th of a second
         usleep(16667);
     }
@@ -208,11 +216,12 @@ void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)
     //     - Ready queue if time slice elapsed or process was preempted
     //  - Wait context switching time
     //  * Repeat until all processes in terminated state
+
+    std::cout << "In coreRunProcesses" <<std::endl;
 	while(!(shared_data->all_terminated))
 	{
 		uint32_t start_time;
 		Process *p;
-		//std::cout << "Core: " << core_id << std::endl;
 
 		bool found = false;
 		//take the first thing off the list:
@@ -229,12 +238,15 @@ void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)
 			lock.unlock();
 		}
 
+		std::cout << "process being computed: " << p->getPid()<< std::endl;
 		p->setState(Process::State::Running,currentTime());
 		p->updateProcess(currentTime());
 	
 		//determing the time to compute:
 		uint32_t slice = 0;
 		int index = p->getCurrentBurstIndex();
+		uint32_t original_burst = p->getBurstTime(index);
+
 		if(shared_data->algorithm = ScheduleAlgorithm::RR)
 		{
 			slice = shared_data->time_slice;
@@ -245,60 +257,75 @@ void coreRunProcesses(uint8_t core_id, SchedulerData *shared_data)
 			slice = uint32_t(p->getBurstTime(index));
 		}
 	
-		std::cout << "Time slice: " <<slice <<std::endl;
-		std::cout << "Burst Time: " << p->getBurstTime(index) <<std::endl;
 		//simulate running the process for a set amount of time 
+
+		std::cout << "Process: "<< p->getPid() << " and Slice: " << slice << " versus the time burst: " << p->getBurstTime(p->getCurrentBurstIndex()) <<std::endl;
 		/*	lock the mutex, check if there is a higher priority in the list:	*/
 		start_time = currentTime(); 
 		uint8_t p_priority = p->getPriority();
-		while(currentTime() - start_time > slice && shared_data->algorithm == ScheduleAlgorithm::PP)
+		
+		std::unique_lock<std::mutex> lock(shared_data->mutex);
+			std::cout << "time slice: " << slice << std::endl;
+		lock.unlock();
+		while((currentTime() - start_time < slice))
 		{
-			std::cout << "Scheduler Algorithm is PP" <<std::endl;
+			//std::cout << "In the burst time while" <<std::endl;
 			//lock the mutex, check for a higher priority: 
-			std::unique_lock<std::mutex> lock(shared_data->mutex);
+			if(shared_data->algorithm == ScheduleAlgorithm::PP)
+			{	
+				std::cout << "In the PP if" <<std::endl;
+				std::unique_lock<std::mutex> lock(shared_data->mutex);
 			/*	find a higher priority if Preemptive Priority is running */
-			for(std::list<Process*>::iterator it= shared_data->io_queue.begin(); it != shared_data->io_queue.end(); ++it)
-	        {
-	        	//if the process on the list has a higher priority that the one on the CPU
-	        	if((*it)->getPriority() < p_priority )
-	        	{
-					p->updateBurstTime(index, p->getBurstTime(index) - (currentTime() - start_time));
-					shared_data->ready_queue.push_back(p);
-	        	}
-	        }
+				for(std::list<Process*>::iterator it= shared_data->io_queue.begin(); it != shared_data->io_queue.end(); ++it)
+		        {
+		        	//if the process on the list has a higher priority that the one on the CPU
+		        	if((*it)->getPriority() < p_priority )
+		        	{
+						p->updateBurstTime(index, p->getBurstTime(index) - (currentTime() - start_time));
+						shared_data->ready_queue.push_back(p);
+		        	}
+		        }
 
-			lock.unlock();
+				lock.unlock();
+			}
 		}
-	
+		
 		/*	Update the BurstTime if greater than the slice:	*/
-		if(p->getBurstTime(index) > slice)
+		if(original_burst > slice)
 		{
-			std::cout<<"Burst time is greater than slice" <<std::endl;
-			p->updateBurstTime(index,p->getBurstTime(index) - slice);
-		}
-	
-		if(p->getCurrentBurstIndex()%2 == 0)
-		{
-			//the next burst is IO
-			std::cout << "Burst Index is even" <<std::endl;
 			std::unique_lock<std::mutex> lock(shared_data->mutex);
-				shared_data->io_queue.push_back(p);
-				p->setState(Process::State::IO,currentTime());
+				std::cout<<"Burst time is greater than slice" <<std::endl;
+				p->updateBurstTime(index,p->getBurstTime(index) - slice);
+				p->setState(Process::State::Ready,currentTime());
 				p->updateProcess(currentTime());
+				shared_data->ready_queue.push_back(p);
 			lock.unlock();
 		}
 
-		if(p->getCurrentBurstIndex() == p->getTotalBursts())
+ 		if(p->getCurrentBurstIndex() == p->getTotalBursts())
 		{
 			//process is terminated
 			std::unique_lock<std::mutex> lock(shared_data->mutex);
+				std::cout << "burst == total burst" <<std::endl;
 				p->setState(Process::State::Terminated,currentTime());
 				p->updateProcess(currentTime());
 			lock.unlock();
 
 		}
+		if(p->getCurrentBurstIndex()%2 == 0 && (original_burst <= slice))
+		{
+			//the next burst is IO
+			std::unique_lock<std::mutex> lock(shared_data->mutex);
+				std::cout << "Entering IO" <<std::endl;
+				p->setState(Process::State::IO,currentTime());
+				p->updateProcess(currentTime());
+				p->setCurrentBurstIndex(p->getCurrentBurstIndex() + 1);
+				shared_data->io_queue.push_back(p);
+			lock.unlock();
+		}
+		std::cout << "Before sleep" <<std::endl;
 		/*	Wait the context switching time allotment	*/
-		usleep(shared_data->context_switch);
+		usleep(shared_data->context_switch * 1000);
 	}
 }
 

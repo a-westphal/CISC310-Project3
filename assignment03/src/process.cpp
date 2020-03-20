@@ -111,6 +111,10 @@ void Process::setState(State new_state, uint32_t current_time)
     state = new_state;
 }
 
+void Process::setCurrentBurstIndex(int burst_idx)
+{
+	current_burst = burst_idx;
+}
 void Process::setCpuCore(int8_t core_num)
 {
     core = core_num;
@@ -133,9 +137,13 @@ void Process::updateProcess(uint32_t current_time)
     }
 
     //if we haven't started running anything: 
-    if(getState() == State::Ready && getCurrentBurstIndex() == 0)
+    if(getState() == State::Ready)
     {
     	start_wait = current_time;
+    	if(start_cpu > 0)
+	   	{
+	   		cpu_time = cpu_time + (current_time - start_cpu);
+	    }
     }
 
     /*	if the process is running, update the wait time, set the start_cpu 
@@ -144,6 +152,10 @@ void Process::updateProcess(uint32_t current_time)
     {
     	wait_time = wait_time + (current_time - start_wait);
     	start_cpu = current_time;
+<<<<<<< HEAD
+    	//std::cout<< "Current Time: " << current_time << " and start_wait: " <<start_wait <<std::endl;
+   	}
+=======
     }
 
     //need to update CPU time? (could change code)
@@ -157,14 +169,20 @@ void Process::updateProcess(uint32_t current_time)
     //burst time: time needed by CPU to complete execution
     //current_burst = getCurrentBurstTime() + current_time; //or current_time - Process::getCpuTime();
 
+>>>>>>> 6d4c8343d65c222d5f6f8913a5470c245789f719
 
     //calculate the remaining time:
     int sum = 0; 
-    for(int i = current_burst; i < num_bursts; i ++)
-    {
-        sum = sum + burst_times[i];
-    }
-    remain_time = sum;
+    
+	for(int i = current_burst; i < num_bursts; i ++)
+	{
+	   	if(i%2==0)
+	    {
+	    	sum = sum + burst_times[i];
+	    }
+	}
+    remain_time = sum; 
+
 }
 
 void Process::updateBurstTime(int burst_idx, uint32_t new_time)
@@ -178,20 +196,20 @@ void Process::updateBurstTime(int burst_idx, uint32_t new_time)
 // SJF - comparator for sorting read queue based on shortest remaining CPU time
 bool SjfComparator::operator ()(const Process *p1, const Process *p2)
 {
-    bool p1_greater = false;
-    if(p1->getPid() > p2->getPid())
+    bool p1_less_than = false;
+    if(p1->getRemainingTime() < p2->getRemainingTime())
     {
-    	p1_greater = true;
+    	p1_less_than = true;
     }
 
-    return p1_greater; 
+    return p1_less_than; 
 }
 
 // PP - comparator for sorting read queue based on priority
 bool PpComparator::operator ()(const Process *p1, const Process *p2)
 {
     bool p1_greater = false;
-    if(p1->getPriority() > p2->getPriority())
+    if(p1->getPriority() < p2->getPriority())
     {
         p1_greater = true;
     }
