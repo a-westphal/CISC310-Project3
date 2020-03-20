@@ -152,25 +152,15 @@ void Process::updateProcess(uint32_t current_time)
     {
     	wait_time = wait_time + (current_time - start_wait);
     	start_cpu = current_time;
-<<<<<<< HEAD
     	//std::cout<< "Current Time: " << current_time << " and start_wait: " <<start_wait <<std::endl;
-   	}
-=======
     }
 
-    //need to update CPU time? (could change code)
     //CPU Time: Total time spent running on a CPU core
     if(getState() == State::Terminated)
     {
-        cpu_time = getTurnaroundTime() - current_time - getWaitTime());
+        cpu_time = getTurnaroundTime() - (current_time - getWaitTime());
     }
     
-    //need to update burst time? (could change code)
-    //burst time: time needed by CPU to complete execution
-    //current_burst = getCurrentBurstTime() + current_time; //or current_time - Process::getCpuTime();
-
->>>>>>> 6d4c8343d65c222d5f6f8913a5470c245789f719
-
     //calculate the remaining time:
     int sum = 0; 
     

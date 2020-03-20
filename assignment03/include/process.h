@@ -46,6 +46,7 @@ public:
     uint32_t getIOQueueStart() const;
     uint32_t getTotalBursts() const;
 
+    void setCurrentBurstIndex(int burst_idx);
     void setState(State new_state, uint32_t current_time);
     void setCpuCore(int8_t core_num);
     void setIOQueue_Time(uint32_t time);
