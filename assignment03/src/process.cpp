@@ -146,6 +146,16 @@ void Process::updateProcess(uint32_t current_time)
     	start_cpu = current_time;
     }
 
+    //need to update CPU time? (could change code)
+    //CPU Time: Total time spent running on a CPU core
+    if(getState() == State::Terminated)
+    {
+        cpu_time = getTurnaroundTime() - current_time - getWaitTime());
+    }
+    
+    //need to update burst time? (could change code)
+    //burst time: time needed by CPU to complete execution
+    //current_burst = getCurrentBurstTime() + current_time; //or current_time - Process::getCpuTime();
 
 
     //calculate the remaining time:
