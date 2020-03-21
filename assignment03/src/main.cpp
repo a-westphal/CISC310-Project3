@@ -181,15 +181,44 @@ int main(int argc, char **argv)
             //total of each process turn_time / #processes
     double avg_turnTime = 0.0;
     double avg_waitTime = 0.0;
+    double CPU_util = 0.0;
+    int throughput1 = 0;
+    int throughput2 = 0;
+    int throughput = 0;
     
     for (i = 0; i < processes.size(); i++)
     {
         avg_turnTime = avg_turnTime + (double)processes[i]->getTurnaroundTime();
         avg_waitTime = avg_waitTime + (double)processes[i]->getWaitTime();
+        CPU_util = CPU_util + (double)processes[i]->getCpuTime();
     }
     
     avg_turnTime = avg_turnTime/config->num_processes;
     avg_waitTime = avg_waitTime/config->num_processes;
+    CPU_util = (CPU_util/currentTime())/num_cores;
+    
+    for (i = 0; i < processes.size(); i++)
+    {
+        if(i%2==0)
+        {
+            //throughput1 = throughput1 + num_processes;
+        }
+        else
+        {
+            //throughput2 = throughput2 + processes[i];
+        }
+    }
+    
+    throughput = (throughput1 + throughput2)/(config->num_processes);
+    throughput1 = throughput1/currentTime()/(config->num_processes/2);;
+    throughput2 = throughput2/currentTime()/(config->num_processes/2);;
+    
+    std::cout<<"CPU utilization is "<< CPU_util << " %\n";
+    std::cout<<"Average for first 50% of processes finished is " <<throughput1 << "\n";
+    std::cout<<"Average for second 50% of processes finished is " <<throughput2 << "\n";
+    std::cout<<"Overall average throughput is " <<throughput << "\n";
+    std::cout<<"Average turnaround time is " << avg_turnTime <<"\n";
+    std::cout<<"Average waiting time is " << avg_waitTime <<"\n";
 
 
     // Clean up before quitting program
